@@ -1,12 +1,12 @@
-using JWTAuthentication.NET6._0.Auth;
+using DemoJWT.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DemoJWT.Controllers
 {
-    [Authorize(Roles = UserRoles.Admin)]
+    [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -21,6 +21,7 @@ namespace DemoJWT.Controllers
             _logger = logger;
         }
 
+        [AuthorizePermission("AdminView")]
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {

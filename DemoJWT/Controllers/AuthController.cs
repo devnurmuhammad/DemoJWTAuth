@@ -1,29 +1,34 @@
-﻿using JWTAuthentication.NET6._0.Auth;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using DemoJWT.AuthModels;
+using DemoJWT.Services;
+using JWTAuthentication.NET6._0.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace JWTAuthentication.NET6._0.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthenticateController : ControllerBase
+    public class AuthController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IPermissionService _permissionService;
         private readonly IConfiguration _configuration;
 
-        public AuthenticateController(
+        public AuthController(
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IPermissionService permissionService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _permissionService = permissionService;
         }
 
         [HttpPost]
@@ -39,6 +44,8 @@ namespace JWTAuthentication.NET6._0.Controllers
                 {
                     new Claim(ClaimTypes.Name, user.UserName),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 };
 
                 foreach (var userRole in userRoles)
@@ -125,6 +132,34 @@ namespace JWTAuthentication.NET6._0.Controllers
                 );
 
             return token;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPermissions()
+        {
+            var permissions = await _permissionService.GetAllPermissionsAsync();
+            return Ok(permissions);
+        }
+
+        [HttpPost("assign-to-role")]
+        public async Task<IActionResult> AssignPermissionToRole(string roleId, int permissionId)
+        {
+            await _permissionService.AssignPermissionToRoleAsync(roleId, permissionId);
+            return Ok();
+        }
+
+        [HttpPost("assign-to-user")]
+        public async Task<IActionResult> AssignPermissionToUser(string userId, int permissionId)
+        {
+            await _permissionService.AssignPermissionToUserAsync(userId, permissionId);
+            return Ok();
+        }
+
+        [HttpGet("check")]
+        public async Task<IActionResult> CheckUserPermission(string userId, string permission)
+        {
+            var hasPermission = await _permissionService.UserHasPermissionAsync(userId, permission);
+            return Ok(new { hasPermission });
         }
     }
 }

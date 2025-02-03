@@ -1,4 +1,4 @@
-﻿namespace JWTAuthentication.NET6._0.Auth
+﻿namespace DemoJWT.AuthModels
 {
     public static class UserRoles
     {

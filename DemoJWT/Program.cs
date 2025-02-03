@@ -1,4 +1,6 @@
 using System.Text;
+using DemoJWT.AuthServices;
+using DemoJWT.Services;
 using JWTAuthentication.NET6._0.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -40,6 +42,29 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]))
     };
 });
+
+
+
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthorization(options =>
+{
+    // Bu yerda ServiceProvider olishning to'g'ri yo'li
+    using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+    {
+        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+        var permissions = permissionService.GetAllPermissionsAsync().Result;
+
+        foreach (var permission in permissions)
+        {
+            options.AddPolicy(
+                permission.Name,
+                policy => policy.Requirements.Add(new PermissionRequirement(permission.Name))
+            );
+        }
+    }
+});
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
